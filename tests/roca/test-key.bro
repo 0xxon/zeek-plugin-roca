@@ -1,6 +1,6 @@
 # @TEST-EXEC: bro %INPUT
 # @TEST-EXEC: btest-diff .stdout
-# @TEST-EXEC: btest-diff .stderr
+# TEST-EXEC: btest-diff .stderr
 
 event bro_init() {
 	# vulnerable
