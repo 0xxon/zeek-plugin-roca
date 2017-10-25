@@ -1,0 +1,6 @@
+[package]
+description = Identify certificates potentially affected by CVE-2017-15361
+tags = certificates, CVE-2017-15361
+plugin_dir = build/Johanna_ROCA.tgz
+build_command = ( ./configure --bro-dist=%(bro_dist)s && make )
+test_command = cd tests && btest -d

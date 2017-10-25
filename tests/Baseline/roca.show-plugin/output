@@ -1,0 +1,4 @@
+Johanna::ROCA - ROCA: Vulnerable RSA generation (CVE-2017-15361) key tester (dynamic, version 0.1)
+    [Function] roca_vulnerable_mod
+    [Function] roca_vulnerable_cert
+

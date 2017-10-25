@@ -1,0 +1,68 @@
+# See the file "COPYING" in the main distribution directory for copyright.
+
+%%{
+
+#include "file_analysis/analyzer/x509/X509.h"
+#include <gmp.h>
+#include <openssl/bn.h>
+
+extern "C" {
+int vulnerableKey_hex(const char* hexmod);
+int vulnerableKey(mpz_t pmod);
+}
+
+%%}
+
+## Check if a given modulus is vulnerable to CVE-2017-15361.
+##
+## modulus: modulus to check (as hexstring).
+##
+## Returns: true if the key is vulnerable, false otherwise.
+function roca_vulnerable_mod%(modulus: string%): bool
+	%{
+	const char* mod = modulus->CheckString();
+	int vuln = vulnerableKey_hex(mod);
+
+	if ( vuln == -2 ) {
+		builtin_error("Could not convert given modulus to number");
+	}
+
+	return new Val(vuln == 1, TYPE_BOOL);
+	%}
+
+## Check if a given certificate public key is vulnerable to
+## CVE-2017-15361.
+##
+## cert: certificate to check.
+##
+## Returns: true if the key is vulnerable, false otherwise.
+function roca_vulnerable_cert%(cert: opaque of x509%): bool
+	%{
+	assert(cert);
+	file_analysis::X509Val* h = (file_analysis::X509Val*) cert;
+	X509* x = h->GetCertificate();
+	if ( ! x ) {
+		builtin_error("opaque of x509 was not valid");
+		return new Val(0, TYPE_BOOL);
+	}
+
+	EVP_PKEY* pkey = X509_extract_key(x);
+	if ( ! pkey ) {
+		// no public key?
+		return new Val(0, TYPE_BOOL);
+	}
+
+	if ( pkey->type != EVP_PKEY_RSA ) {
+		EVP_PKEY_free(pkey);
+		return new Val(0, TYPE_BOOL);
+	}
+
+	mpz_t mod;
+	mpz_init(mod);
+	mpz_import(mod, pkey->pkey.rsa->n->top, -1, BN_BITS2/8, 0, 0, pkey->pkey.rsa->n->d);
+	int vuln = vulnerableKey(mod);
+	mpz_clear(mod);
+	EVP_PKEY_free(pkey);
+
+	return new Val(vuln == 1, TYPE_BOOL);
+	%}
